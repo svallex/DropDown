@@ -179,7 +179,10 @@ public final class DropDown: UIView {
 
 	//MARK: Appearance
 	@objc public dynamic var cellHeight = DPDConstant.UI.RowHeight {
-		willSet { tableView.rowHeight = newValue }
+		willSet {
+            tableView.estimatedRowHeight = DPDConstant.UI.RowHeight
+            tableView.rowHeight = newValue
+        }
 		didSet { reloadAllComponents() }
 	}
 
@@ -770,7 +773,6 @@ extension DropDown {
 		
 		for index in 0..<dataSource.count {
 			configureCell(templateCell, at: index)
-			templateCell.bounds.size.height = cellHeight
 			let width = templateCell.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).width
 			
 			if width > maxWidth {
@@ -969,6 +971,10 @@ extension DropDown {
 		DispatchQueue.executeOnMainThread {
 			self.tableView.reloadData()
 			self.setNeedsUpdateConstraints()
+            // ios bug with tableView.contentSize
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                self.setNeedsUpdateConstraints()
+            }
 		}
 	}
 
@@ -1030,7 +1036,7 @@ extension DropDown {
 
 	/// Returns the height needed to display all cells.
 	fileprivate var tableHeight: CGFloat {
-		return tableView.rowHeight * CGFloat(dataSource.count)
+        return tableView.contentSize.height
 	}
 
     //MARK: Objective-C methods for converting the Swift type Index
@@ -1078,6 +1084,7 @@ extension DropDown: UITableViewDataSource, UITableViewDelegate {
 		cell.selectedBackgroundColor = selectionBackgroundColor
         cell.highlightTextColor = selectedTextColor
         cell.normalTextColor = textColor
+        cell.optionLabel.numberOfLines = 0
 		
 		if let cellConfiguration = cellConfiguration {
 			cell.optionLabel.text = cellConfiguration(index, dataSource[index])
